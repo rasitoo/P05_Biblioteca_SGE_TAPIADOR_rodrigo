@@ -7,6 +7,6 @@ class User(SQLModel, table=True):
     dni: str
     name: Optional[str] = "Unknown"
     email: Optional[str] = "Unknown"
-    number: Optional[str] = "Unknown"
+    phone: Optional[str] = "Unknown"
     address: Optional[str] = "Unknown"
     loans: list[Loan] = Relationship(back_populates="user")

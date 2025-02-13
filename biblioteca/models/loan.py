@@ -3,8 +3,6 @@
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import date
 
-from biblioteca.models.book import Book
-from biblioteca.models.user import User
 
 
 class Loan(SQLModel, table=True):
@@ -13,5 +11,5 @@ class Loan(SQLModel, table=True):
     loan_date: date | None = date.today()
     return_date: date | None = None
 
-    book: Book = Relationship(back_populates="loans")
-    user: User = Relationship(back_populates="loans")
+    book: "Book" = Relationship(back_populates="loans") #Aunque avise de hacer el import mejor no hacerlo porque se producen imports en bucle
+    user: "User" = Relationship(back_populates="loans")

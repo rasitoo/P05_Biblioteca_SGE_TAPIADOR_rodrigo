@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, create_engine, Session
 
 class Database:
     def __init__(self, db_name):
-        self.engine = create_engine(f"sqlite:///{db_name}", echo=True)
+        self.engine = create_engine(f"sqlite:///{db_name}", echo=False)
 
     def init_db(self):
         SQLModel.metadata.create_all(self.engine)

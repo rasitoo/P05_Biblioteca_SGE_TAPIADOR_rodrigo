@@ -1,44 +1,87 @@
+from datetime import date
+
 from biblioteca.models.user import User
 from biblioteca.models.book import Book
 from biblioteca.models.loan import Loan
-from biblioteca.database import Database
-from datetime import date
+from biblioteca.repositories.repository import Repositories
 
 class Controller:
-    def __init__(self, db_name):
-        self.db = Database(db_name)
+    def __init__(self, db: Repositories):
+        self.repo = db
 
-    def add_user(self, dni, name, email, number, address):
-        user = User(dni=dni, name=name, email=email, number=number, address=address)
-        self.db.execute("INSERT INTO users (dni, name, email, number, address) VALUES (?, ?, ?, ?, ?)",
-                        (user.dni, user.name, user.email, user.number, user.address))
+    def add_user(self, dni: str, name: str, email: str, phone: str, address: str):
+        if not dni:
+            raise ValueError("El DNI no puede estar vacío")
+        user = User(dni=dni, name=name, email=email, phone=phone, address=address)
+        self.repo.add_user(user)
 
-    def remove_user(self, dni):
-        self.db.execute("DELETE FROM users WHERE dni = ?", (dni,))
+    def remove_user(self, dni: str):
+        if not dni:
+            raise ValueError("El DNI no puede estar vacío")
+        self.repo.remove_user(dni)
 
-    def add_book(self, isbn, title, author, genre, cover_uri, synopsis, copies):
+    def add_book(self, isbn: str, title: str, author: str, genre: str, cover_uri: str, synopsis: str, copies: int):
+        if not isbn:
+            raise ValueError("El ISBN no puede estar vacío")
+        if copies == "":
+            copies = None
+        else:
+            try:
+                copies = int(copies)
+            except ValueError:
+                raise ValueError("Las copias deben ser un número")
         book = Book(isbn=isbn, title=title, author=author, genre=genre, cover_uri=cover_uri, synopsis=synopsis, copies=copies)
-        self.db.execute("INSERT INTO books (isbn, title, author, genre, cover_uri, synopsis, copies) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        (book.isbn, book.title, book.author, book.genre, book.cover_uri, book.synopsis, book.copies))
+        self.repo.add_book(book)
 
-    def remove_book(self, isbn):
-        self.db.execute("DELETE FROM books WHERE isbn = ?", (isbn,))
+    def remove_book(self, isbn: str):
+        if not isbn:
+            raise ValueError("El ISBN no puede estar vacío")
+        self.repo.remove_book(isbn)
 
-    def lend_book(self, isbn, dni):
-        user = self.db.execute("SELECT * FROM users WHERE dni = ?", (dni,)).fetchone()
-        book = self.db.execute("SELECT * FROM books WHERE isbn = ?", (isbn,)).fetchone()
-        loan = Loan(user=user, book=book, loan_date=date.today())
-        self.db.execute("INSERT INTO loans (user_id, book_id, loan_date) VALUES (?, ?, ?)",
-                        (user['id'], book['id'], loan.loan_date))
+    def lend_book(self, isbn: str, dni: str):
+        if not isbn:
+            raise ValueError("El ISBN no puede estar vacío")
+        if not dni:
+            raise ValueError("El DNI no puede estar vacío")
+        loan = Loan(book_id=isbn, user_id=dni, loan_date=date.today())
+        self.repo.lend_book(loan)
 
-    def return_book(self, isbn):
-        self.db.execute("UPDATE loans SET return_date = ? WHERE book_id = ? AND return_date IS NULL",
-                        (date.today(), isbn))
+    def return_book(self, isbn: str):
+        if not isbn:
+            raise ValueError("El ISBN no puede estar vacío")
+        book = self.repo.get_book_by_isbn(isbn)
+        if not book:
+            raise ValueError("El libro no existe")
+        self.repo.return_book(book.id)
 
     def list_books(self):
-        self.db.execute("SELECT * FROM books")
-        return self.db.fetchall()
+        books = self.repo.list_books()
+        loans = self.repo.list_loans()
+        loan_dict = {loan.book_id: loan for loan in loans}
+        result = []
+        for book in books:
+            loan_info = loan_dict.get(book.isbn)
+            if loan_info:
+                user = self.repo.get_user_by_id(loan_info.user_id)
+                result.append(f"{book.title} (ISBN: {book.isbn}) - Prestado a: {user.name} (DNI: {user.dni})")
+            else:
+                result.append(f"{book.title} (ISBN: {book.isbn}) - Disponible")
+        return result
 
     def list_users(self):
-        self.db.execute("SELECT * FROM users")
-        return self.db.fetchall()
+        users = self.repo.list_users()
+        loans = self.repo.list_loans()
+        loan_dict = {loan.user_id: loan for loan in loans}
+        result = []
+        for user in users:
+            result.append(f"Usuario:{user.id} DNI:{user.dni} Nombre:{user.name} Email:{user.email} tlf:{user.phone} dirección:{user.address}")
+            loan_info = loan_dict.get(user.dni)
+            if loan_info:
+                book = self.repo.get_book_by_id(loan_info.book_id)
+                result.append(f"\tPrestado: {book.title} (ISBN: {book.isbn}, ID: {book.id})")
+            else:
+                result.append(f"\tSin préstamos")
+        return result
+
+    def list_loans(self):
+        return self.repo.list_loans()
