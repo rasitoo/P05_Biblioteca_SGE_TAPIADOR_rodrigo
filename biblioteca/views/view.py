@@ -61,5 +61,5 @@ def menu(controller):
                 print("Opción no válida, intente de nuevo.")
         except ValueError as e:
             print(f"Error: {e}")
-        except Exception as e:
-            print(f"Error inesperado: {e}")
+        #except Exception as e:
+         #   print(f"Error inesperado: {e}")

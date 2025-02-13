@@ -65,3 +65,11 @@ class Repositories:
     def get_book_by_id(self, book_id: str):
         with Session(self.db.engine) as session:
             return session.exec(select(Book).where(Book.id == book_id)).one()
+
+    def get_user_by_dni(self, dni: str):
+        with Session(self.db.engine) as session:
+            return session.exec(select(User).where(User.dni == dni)).one()
+
+    def get_book_by_isbn(self, isbn: str):
+        with Session(self.db.engine) as session:
+            return session.exec(select(Book).where(Book.isbn == isbn)).one()

@@ -43,7 +43,9 @@ class Controller:
             raise ValueError("El ISBN no puede estar vacío")
         if not dni:
             raise ValueError("El DNI no puede estar vacío")
-        loan = Loan(book_id=isbn, user_id=dni, loan_date=date.today())
+        user = self.repo.get_user_by_dni(dni)
+        book = self.repo.get_book_by_isbn(isbn)
+        loan = Loan(book=book, user=user, loan_date=date.today())
         self.repo.lend_book(loan)
 
     def return_book(self, isbn: str):
@@ -60,12 +62,13 @@ class Controller:
         loan_dict = {loan.book_id: loan for loan in loans}
         result = []
         for book in books:
-            loan_info = loan_dict.get(book.isbn)
+            result.append(f"ID:{book.id} ISBN:{book.isbn} Título:{book.title} Autor:{book.author} Género:{book.genre} Portada:{book.cover_uri} Sinopsis:{book.synopsis} Copias:{book.copies} ")
+            loan_info = loan_dict.get(book.id)
             if loan_info:
                 user = self.repo.get_user_by_id(loan_info.user_id)
-                result.append(f"{book.title} (ISBN: {book.isbn}) - Prestado a: {user.name} (DNI: {user.dni})")
+                result.append(f"\tPrestado a: (Usuario:{user.id} DNI:{user.dni} Nombre:{user.name} Email:{user.email} tlf:{user.phone} dirección:{user.address}) ")
             else:
-                result.append(f"{book.title} (ISBN: {book.isbn}) - Disponible")
+                result.append("\tDisponible")
         return result
 
     def list_users(self):
@@ -74,8 +77,8 @@ class Controller:
         loan_dict = {loan.user_id: loan for loan in loans}
         result = []
         for user in users:
-            result.append(f"Usuario:{user.id} DNI:{user.dni} Nombre:{user.name} Email:{user.email} tlf:{user.phone} dirección:{user.address}")
-            loan_info = loan_dict.get(user.dni)
+            result.append(f"Usuario:{user.id} DNI:{user.dni} Nombre:{user.name} Email:{user.email} tlf:{user.phone} dirección:{user.address} ")
+            loan_info = loan_dict.get(user.id)
             if loan_info:
                 book = self.repo.get_book_by_id(loan_info.book_id)
                 result.append(f"\tPrestado: {book.title} (ISBN: {book.isbn}, ID: {book.id})")
@@ -84,4 +87,7 @@ class Controller:
         return result
 
     def list_loans(self):
-        return self.repo.list_loans()
+        result = []
+        for loan in self.repo.list_loans():
+            result.append(f"Libro: (ID:{loan.book_id}) prestado a: (Usuario:{loan.user_id})")
+        return result
