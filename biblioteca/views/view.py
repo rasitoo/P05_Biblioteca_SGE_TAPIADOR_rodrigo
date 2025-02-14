@@ -31,8 +31,7 @@ def menu(controller):
                 genre = input("Género: ")
                 cover_uri = input("URI de la portada: ")
                 synopsis = input("Sinopsis: ")
-                copies = input("Copias: ")
-                controller.add_book(isbn, title, author, genre, cover_uri, synopsis, copies)
+                controller.add_book(isbn, title, author, genre, cover_uri, synopsis)
             elif opcion == '4':
                 isbn = input("ISBN: ")
                 controller.remove_book(isbn)

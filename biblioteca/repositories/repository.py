@@ -42,8 +42,7 @@ class Repositories:
     def return_book(self, id: int):
         with Session(self.db.engine) as session:
             loan = session.exec(select(Loan).where(Loan.book_id == id, Loan.return_date == None)).one()
-            loan.return_date = date.today()
-            session.add(loan)
+            session.delete(loan)
             session.commit()
 
     def list_books(self):

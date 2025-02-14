@@ -12,6 +12,16 @@ class Controller:
     def add_user(self, dni: str, name: str, email: str, phone: str, address: str):
         if not dni:
             raise ValueError("El DNI no puede estar vacío")
+        if self.repo.get_user_by_dni(dni):
+            raise ValueError("El DNI ya existe")
+        if not name:
+            name = None
+        if not email:
+            email = None
+        if not phone:
+            phone = None
+        if not address:
+            address = None
         user = User(dni=dni, name=name, email=email, phone=phone, address=address)
         self.repo.add_user(user)
 
@@ -20,18 +30,27 @@ class Controller:
             raise ValueError("El DNI no puede estar vacío")
         self.repo.remove_user(dni)
 
-    def add_book(self, isbn: str, title: str, author: str, genre: str, cover_uri: str, synopsis: str, copies: int):
+    def add_book(self, isbn: str, title: str, author: str, genre: str, cover_uri: str, synopsis: str):
         if not isbn:
             raise ValueError("El ISBN no puede estar vacío")
-        if copies == "":
-            copies = None
+        if not title:
+            title = None
+        if not author:
+            author = None
+        if not genre:
+            genre = None
+        if not cover_uri:
+            cover_uri = None
+        if not synopsis:
+            synopsis = None
+
+        existing_book = self.repo.get_book_by_isbn(isbn)
+        if existing_book:
+            existing_book.copies += 1
+            self.repo.update_book(existing_book)
         else:
-            try:
-                copies = int(copies)
-            except ValueError:
-                raise ValueError("Las copias deben ser un número")
-        book = Book(isbn=isbn, title=title, author=author, genre=genre, cover_uri=cover_uri, synopsis=synopsis, copies=copies)
-        self.repo.add_book(book)
+            book = Book(isbn=isbn, title=title, author=author, genre=genre, cover_uri=cover_uri, synopsis=synopsis, copies=1)
+            self.repo.add_book(book)
 
     def remove_book(self, isbn: str):
         if not isbn:

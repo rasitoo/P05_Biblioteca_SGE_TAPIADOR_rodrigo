@@ -4,7 +4,7 @@ from biblioteca.models.loan import Loan
 
 class Book(SQLModel, table=True):
     id : Optional[int] = Field(default=None, primary_key=True)
-    isbn: str
+    isbn: str = Field(unique=True)
     title: Optional[str] = "Unknown"
     author: Optional[str] = "Unknown"
     genre: Optional[str] = "Unknown"
