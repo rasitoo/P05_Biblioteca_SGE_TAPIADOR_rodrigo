@@ -43,15 +43,13 @@ class Controller:
             cover_uri = None
         if not synopsis:
             synopsis = None
-
-        existing_book = self.repo.get_book_by_isbn(isbn)
-        if existing_book:
+        try:
+            existing_book = self.repo.get_book_by_isbn(isbn)
             existing_book.copies += 1
             self.repo.update_book(existing_book)
-        else:
+        except Exception as e:
             book = Book(isbn=isbn, title=title, author=author, genre=genre, cover_uri=cover_uri, synopsis=synopsis, copies=1)
             self.repo.add_book(book)
-
     def remove_book(self, isbn: str):
         if not isbn:
             raise ValueError("El ISBN no puede estar vacío")
