@@ -12,7 +12,7 @@ class Controller:
     def add_user(self, dni: str, name: str, email: str, phone: str, address: str):
         if not dni:
             raise ValueError("El DNI no puede estar vacío")
-        if self.repo.get_user_by_dni(dni):
+        if any(user.dni == dni for user in self.repo.list_users()):
             raise ValueError("El DNI ya existe")
         if not name:
             name = None
@@ -28,7 +28,13 @@ class Controller:
     def remove_user(self, dni: str):
         if not dni:
             raise ValueError("El DNI no puede estar vacío")
-        self.repo.remove_user(dni)
+        for user in self.repo.list_users():
+            if user.dni == dni:
+                self.repo.remove_user(user.id)
+                break
+        else:
+            raise Exception("No existe ningún usuario con ese dni")
+
 
     def add_book(self, isbn: str, title: str, author: str, genre: str, cover_uri: str, synopsis: str):
         if not isbn:
@@ -44,34 +50,54 @@ class Controller:
         if not synopsis:
             synopsis = None
         try:
-            existing_book = self.repo.get_book_by_isbn(isbn)
-            existing_book.copies += 1
-            self.repo.update_book(existing_book)
+            for book in self.repo.list_books():
+                if book.isbn == isbn:
+                    book.copies += 1
+                    self.repo.update_book(book)
+                    break
+            else:
+                raise Exception("No existe ningún libro con ese isbn")
         except Exception as e:
             book = Book(isbn=isbn, title=title, author=author, genre=genre, cover_uri=cover_uri, synopsis=synopsis, copies=1)
             self.repo.add_book(book)
-    def remove_book(self, isbn: str):
-        if not isbn:
-            raise ValueError("El ISBN no puede estar vacío")
-        self.repo.remove_book(isbn)
+
+    def remove_book(self, id: int):
+        if not id:
+            raise ValueError("El id no puede estar vacío")
+        self.repo.remove_book(id)
 
     def lend_book(self, isbn: str, dni: str):
         if not isbn:
             raise ValueError("El ISBN no puede estar vacío")
         if not dni:
             raise ValueError("El DNI no puede estar vacío")
-        user = self.repo.get_user_by_dni(dni)
-        book = self.repo.get_book_by_isbn(isbn)
-        loan = Loan(book=book, user=user, loan_date=date.today())
+
+        for user in self.repo.list_users():
+            if user.dni == dni:
+                user_loan = user
+                break
+        else:
+            raise Exception("No existe ningún usuario con ese dni")
+
+        for book in self.repo.list_books():
+            if book.isbn == isbn:
+                book_loan = book
+                break
+        else:
+            raise Exception("No existe ningún libro con ese isbn")
+
+        loan = Loan(book=book_loan, user=user_loan, loan_date=date.today())
         self.repo.lend_book(loan)
 
     def return_book(self, isbn: str):
         if not isbn:
             raise ValueError("El ISBN no puede estar vacío")
-        book = self.repo.get_book_by_isbn(isbn)
-        if not book:
-            raise ValueError("El libro no existe")
-        self.repo.return_book(book.id)
+        for book in self.repo.list_books():
+            if book.isbn == isbn:
+                self.repo.return_book(book.id)
+                break
+        else:
+            raise Exception("No existe ningún libro con ese isbn")
 
     def list_books(self):
         books = self.repo.list_books()
@@ -82,7 +108,7 @@ class Controller:
             result.append(f"ID:{book.id} ISBN:{book.isbn} Título:{book.title} Autor:{book.author} Género:{book.genre} Portada:{book.cover_uri} Sinopsis:{book.synopsis} Copias:{book.copies} ")
             loan_info = loan_dict.get(book.id)
             if loan_info:
-                user = self.repo.get_user_by_id(loan_info.user_id)
+                user = self.repo.get_user(loan_info.user_id)
                 result.append(f"\tPrestado a: (Usuario:{user.id} DNI:{user.dni} Nombre:{user.name} Email:{user.email} tlf:{user.phone} dirección:{user.address}) ")
             else:
                 result.append("\tDisponible")
@@ -97,7 +123,7 @@ class Controller:
             result.append(f"Usuario:{user.id} DNI:{user.dni} Nombre:{user.name} Email:{user.email} tlf:{user.phone} dirección:{user.address} ")
             loan_info = loan_dict.get(user.id)
             if loan_info:
-                book = self.repo.get_book_by_id(loan_info.book_id)
+                book = self.repo.get_book(loan_info.book_id)
                 result.append(f"\tPrestado: {book.title} (ISBN: {book.isbn}, ID: {book.id})")
             else:
                 result.append(f"\tSin préstamos")
